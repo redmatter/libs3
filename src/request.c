@@ -371,6 +371,9 @@ static S3Status compose_amz_headers(const RequestParams *params,
         case S3CannedAclBucketOwnerFullControl:
             cannedAclString = "bucket-owner-full-control";
             break;
+        case S3CannedAclBucketOwnerRead:
+            cannedAclString = "bucket-owner-read";
+            break;
         default: // S3CannedAclAuthenticatedRead
             cannedAclString = "authenticated-read";
             break;

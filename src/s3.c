@@ -384,7 +384,7 @@ static void usageExit(FILE *out)
 "\n"
 "  The following canned ACLs are supported:\n"
 "    private (default), public-read, public-read-write, authenticated-read,\n"
-"    bucket-owner-full-control\n"
+"    bucket-owner-full-control, bucket-owner-read\n"
 "\n"
 " ACL Format:\n"
 "\n"
@@ -1084,6 +1084,9 @@ static void create_bucket(int argc, char **argv, int optindex)
             }
             else if (!strcmp(val, "bucket-owner-full-control")) {
                 cannedAcl = S3CannedAclBucketOwnerFullControl;
+            }
+            else if (!strcmp(val, "bucket-owner-read")) {
+                cannedAcl = S3CannedAclBucketOwnerRead;
             }
             else {
                 fprintf(stderr, "\nERROR: Unknown canned ACL: %s\n", val);
@@ -2433,6 +2436,9 @@ static void put_object(int argc, char **argv, int optindex,
             else if (!strcmp(val, "authenticated-read")) {
                 cannedAcl = S3CannedAclAuthenticatedRead;
             }
+            else if (!strcmp(val, "bucket-owner-read")) {
+                cannedAcl = S3CannedAclBucketOwnerRead;
+            }
             else {
                 fprintf(stderr, "\nERROR: Unknown canned ACL: %s\n", val);
                 usageExit(stderr);
@@ -2947,6 +2953,9 @@ static void copy_object(int argc, char **argv, int optindex)
             }
             else if (!strcmp(val, "bucket-owner-full-control")) {
                 cannedAcl = S3CannedAclBucketOwnerFullControl;
+            }
+            else if (!strcmp(val, "bucket-owner-read")) {
+                cannedAcl = S3CannedAclBucketOwnerRead;
             }
             else {
                 fprintf(stderr, "\nERROR: Unknown canned ACL: %s\n", val);
