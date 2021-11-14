@@ -380,9 +380,37 @@ static S3Status compose_amz_headers(const RequestParams *params,
         }
 
         // Add the x-amz-server-side-encryption header, if necessary
-        if (properties->useServerSideEncryption) {
+        switch (properties->serverSideEncryption) {
+        case S3ServerSideEncryptionDisabled:
+            break;
+        case S3ServerSideEncryptionS3:
             append_amz_header(values, 0, "x-amz-server-side-encryption",
-                              "AES256");
+                                "AES256");
+            break;
+        case S3ServerSideEncryptionKms:
+            append_amz_header(values, 0, "x-amz-server-side-encryption",
+                                "aws:kms");
+            break;
+        default:
+            return S3StatusBadServerSideEncryption;
+        }
+
+        if (properties->serverSideEncryptionKmsKeyId) {
+            if (properties->serverSideEncryption != S3ServerSideEncryptionKms) {
+                return S3StatusBadServerSideEncryption;
+            }
+
+            append_amz_header(values, 0, "x-amz-server-side-encryption-aws-kms-key-id",
+                                properties->serverSideEncryptionKmsKeyId);
+        }
+
+        if (properties->serverSideEncryptionBucketKeyEnabled) {
+            if (properties->serverSideEncryption != S3ServerSideEncryptionKms) {
+                return S3StatusBadServerSideEncryption;
+            }
+
+            append_amz_header(values, 0, "x-amz-server-side-encryption-bucket-key-enabled",
+                                "true");
         }
     }
 

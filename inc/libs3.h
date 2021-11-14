@@ -305,6 +305,7 @@ typedef enum
     S3StatusConnectionFailed                                ,
     S3StatusAbortedByCallback                               ,
     S3StatusNotSupported                                    ,
+    S3StatusBadServerSideEncryption                         ,
 
     /**
      * Errors from the S3 service
@@ -508,6 +509,12 @@ typedef enum
     S3CannedAclBucketOwnerFullControl   = 4  /* bucket-owner-full-control */
 } S3CannedAcl;
 
+typedef enum
+{
+    S3ServerSideEncryptionDisabled = 0, /* disabled */
+    S3ServerSideEncryptionS3       = 1, /* SSE-S3  https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingServerSideEncryption.html */
+    S3ServerSideEncryptionKms      = 2  /* SSE-KMS https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html */
+} S3ServerSideEncryption;
 
 /** **************************************************************************
  * Data Types
@@ -900,21 +907,29 @@ typedef struct S3PutProperties
     const S3NameValue *metaData;
 
     /**
-     * This a boolean value indicating whether or not the object should be
-     * stored by Amazon S3 using server-side encryption, wherein the data is
-     * encrypted by Amazon before being stored on permanent medium.
-     * Server-side encryption does not affect the data as it is sent to or
-     * received by Amazon, the encryption is applied by Amazon when objects
-     * are put and then de-encryption is applied when the objects are read by
-     * clients.
-     * If this value is 0, then server-side encryption is not used; if this
-     * value is non-zero, then server-side encryption is used.  Note that the
-     * encryption status of the object can be checked by ensuring that the put
-     * response has the usesServerSideEncryption flag set.
+     * Indicate whether or not the object should be stored by Amazon S3 using
+     * server-side encryption, wherein the data is encrypted by Amazon before
+     * being stored on permanent medium.
+     * If this value is 0, then server-side encryption is not used.
      **/
-    char useServerSideEncryption;
-} S3PutProperties;
+    S3ServerSideEncryption serverSideEncryption;
 
+    /**
+     * The ID of the AWS KMS symmetrical customer managed key to be used for the
+     * object; it has to be used along with S3ServerSideEncryptionKms.
+     * If S3ServerSideEncryptionKms is used and this value is set to 0, then
+     * Amazon S3 uses the AWS managed key to protect the data. If the specified
+     * KMS key does not exist in the same account issuing the command, the
+     * full-ARN must be used; not just the ID. 
+     */
+    const char *serverSideEncryptionKmsKeyId;
+
+    /**
+     * Setting this to 1 causes Amazon S3 to use an S3 Bucket Key for object
+     * encryption with SSE-KMS.
+     */
+    char serverSideEncryptionBucketKeyEnabled;
+} S3PutProperties;
 
 /**
  * S3GetConditions is used for the get_object operation, and specifies

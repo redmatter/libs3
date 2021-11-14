@@ -138,9 +138,15 @@ static char putenvBufG[256];
 #define EXPIRES_PREFIX_LEN (sizeof(EXPIRES_PREFIX) - 1)
 #define X_AMZ_META_PREFIX "x-amz-meta-"
 #define X_AMZ_META_PREFIX_LEN (sizeof(X_AMZ_META_PREFIX) - 1)
-#define USE_SERVER_SIDE_ENCRYPTION_PREFIX "useServerSideEncryption="
+#define USE_SERVER_SIDE_ENCRYPTION_PREFIX "sse="
 #define USE_SERVER_SIDE_ENCRYPTION_PREFIX_LEN \
     (sizeof(USE_SERVER_SIDE_ENCRYPTION_PREFIX) - 1)
+#define SSE_KMS_KEY_ID_PREFIX "sseKmsKeyId="
+#define SSE_KMS_KEY_ID_PREFIX_LEN \
+    (sizeof(SSE_KMS_KEY_ID_PREFIX) - 1)
+#define SSE_WITH_BUCKET_KEY_PREFIX "sseWithBucketKey="
+#define SSE_WITH_BUCKET_KEY_PREFIX_LEN \
+    (sizeof(SSE_WITH_BUCKET_KEY_PREFIX) - 1)
 #define IF_MODIFIED_SINCE_PREFIX "ifModifiedSince="
 #define IF_MODIFIED_SINCE_PREFIX_LEN (sizeof(IF_MODIFIED_SINCE_PREFIX) - 1)
 #define IF_NOT_MODIFIED_SINCE_PREFIX "ifNotmodifiedSince="
@@ -301,8 +307,11 @@ static void usageExit(FILE *out)
 "     [expires]          : Expiration date to associate with object\n"
 "     [cannedAcl]        : Canned ACL for the object (see Canned ACLs)\n"
 "     [x-amz-meta-...]]  : Metadata headers to associate with the object\n"
-"     [useServerSideEncryption] : Whether or not to use server-side\n"
-"                          encryption for the object\n"
+"     [sse]              : Server-side encryption for the object \n"
+"                          (see Server-Side Encryption)\n"
+"     [sseKmsKeyId]      : AWS-KMS key-id to use with sse=kms\n"
+"     [sseWithBucketKey] : Whether or not to use server-side encryption with\n"
+"                          a bucket key"
 "     [upload-id]        : Upload-id of a uncomplete multipart upload, if you \n"
 "                          want to continue to put the object, you must specifil\n"
 "\n"
@@ -374,7 +383,8 @@ static void usageExit(FILE *out)
 " Canned ACLs:\n"
 "\n"
 "  The following canned ACLs are supported:\n"
-"    private (default), public-read, public-read-write, authenticated-read\n"
+"    private (default), public-read, public-read-write, authenticated-read,\n"
+"    bucket-owner-full-control\n"
 "\n"
 " ACL Format:\n"
 "\n"
@@ -400,6 +410,10 @@ static void usageExit(FILE *out)
 "      2008-07-29T20:36:14\n"
 "      2008-07-29T20:36:14-06:00\n"
 "      2008-07-29T20:36:14+11:30\n"
+"\n"
+" Server-Side Encryption:\n"
+"  The SSE methods supported are 's3' and 'kms'. If none are specified,\n"
+"  SSE will be disabled for the object.\n"
 "\n");
 
     exit(-1);
@@ -1067,6 +1081,9 @@ static void create_bucket(int argc, char **argv, int optindex)
             }
             else if (!strcmp(val, "authenticated-read")) {
                 cannedAcl = S3CannedAclAuthenticatedRead;
+            }
+            else if (!strcmp(val, "bucket-owner-full-control")) {
+                cannedAcl = S3CannedAclBucketOwnerFullControl;
             }
             else {
                 fprintf(stderr, "\nERROR: Unknown canned ACL: %s\n", val);
@@ -2301,7 +2318,9 @@ static void put_object(int argc, char **argv, int optindex,
     S3CannedAcl cannedAcl = S3CannedAclPrivate;
     int metaPropertiesCount = 0;
     S3NameValue metaProperties[S3_MAX_METADATA_COUNT];
-    char useServerSideEncryption = 0;
+    S3ServerSideEncryption useServerSideEncryption = S3ServerSideEncryptionDisabled;
+    const char *serverSideEncryptionKmsKeyId = 0;
+    char serverSideEncryptionBucketKeyEnabled = 0;
     int noStatus = 0;
 
     while (optindex < argc) {
@@ -2374,13 +2393,27 @@ static void put_object(int argc, char **argv, int optindex,
         else if (!strncmp(param, USE_SERVER_SIDE_ENCRYPTION_PREFIX,
                           USE_SERVER_SIDE_ENCRYPTION_PREFIX_LEN)) {
             const char *val = &(param[USE_SERVER_SIDE_ENCRYPTION_PREFIX_LEN]);
+            if (!strcmp(val, "s3") || !strcmp(val, "S3")) {
+                useServerSideEncryption = S3ServerSideEncryptionS3;
+            }
+            else if (!strcmp(val, "kms") || !strcmp(val, "KMS")) {
+                useServerSideEncryption = S3ServerSideEncryptionKms;
+            }
+            else {
+                fprintf(stderr, "\nERROR: Invalid parameter: %s\n", param);
+                usageExit(stderr);
+            }
+        }
+        else if (!strncmp(param, SSE_KMS_KEY_ID_PREFIX, SSE_KMS_KEY_ID_PREFIX_LEN)) {
+            serverSideEncryptionKmsKeyId = &(param[SSE_KMS_KEY_ID_PREFIX_LEN]);
+        }
+        else if (!strncmp(param, SSE_WITH_BUCKET_KEY_PREFIX,
+                          SSE_WITH_BUCKET_KEY_PREFIX_LEN)) {
+            const char *val = &(param[SSE_WITH_BUCKET_KEY_PREFIX_LEN]);
             if (!strcmp(val, "true") || !strcmp(val, "TRUE") ||
                 !strcmp(val, "yes") || !strcmp(val, "YES") ||
                 !strcmp(val, "1")) {
-                useServerSideEncryption = 1;
-            }
-            else {
-                useServerSideEncryption = 0;
+                serverSideEncryptionBucketKeyEnabled = 1;
             }
         }
         else if (!strncmp(param, CANNED_ACL_PREFIX, CANNED_ACL_PREFIX_LEN)) {
@@ -2508,7 +2541,9 @@ static void put_object(int argc, char **argv, int optindex,
         cannedAcl,
         metaPropertiesCount,
         metaProperties,
-        useServerSideEncryption
+        useServerSideEncryption,
+        serverSideEncryptionKmsKeyId,
+        serverSideEncryptionBucketKeyEnabled
     };
 
     if (contentLength <= MULTIPART_CHUNK_SIZE) {
@@ -2812,7 +2847,9 @@ static void copy_object(int argc, char **argv, int optindex)
     S3CannedAcl cannedAcl = S3CannedAclPrivate;
     int metaPropertiesCount = 0;
     S3NameValue metaProperties[S3_MAX_METADATA_COUNT];
-    char useServerSideEncryption = 0;
+    S3ServerSideEncryption useServerSideEncryption = S3ServerSideEncryptionDisabled;
+    const char *serverSideEncryptionKmsKeyId = 0;
+    char serverSideEncryptionBucketKeyEnabled = 0;
     int anyPropertiesSet = 0;
 
     while (optindex < argc) {
@@ -2870,14 +2907,28 @@ static void copy_object(int argc, char **argv, int optindex)
         }
         else if (!strncmp(param, USE_SERVER_SIDE_ENCRYPTION_PREFIX,
                           USE_SERVER_SIDE_ENCRYPTION_PREFIX_LEN)) {
-            if (!strcmp(param, "true") || !strcmp(param, "TRUE") ||
-                !strcmp(param, "yes") || !strcmp(param, "YES") ||
-                !strcmp(param, "1")) {
-                useServerSideEncryption = 1;
-                anyPropertiesSet = 1;
+            const char *val = &(param[USE_SERVER_SIDE_ENCRYPTION_PREFIX_LEN]);
+            if (!strcmp(val, "s3") || !strcmp(val, "S3")) {
+                useServerSideEncryption = S3ServerSideEncryptionS3;
+            }
+            else if (!strcmp(val, "kms") || !strcmp(val, "KMS")) {
+                useServerSideEncryption = S3ServerSideEncryptionKms;
             }
             else {
-                useServerSideEncryption = 0;
+                fprintf(stderr, "\nERROR: Invalid parameter: %s\n", param);
+                usageExit(stderr);
+            }
+        }
+        else if (!strncmp(param, SSE_KMS_KEY_ID_PREFIX, SSE_KMS_KEY_ID_PREFIX_LEN)) {
+            serverSideEncryptionKmsKeyId = &(param[SSE_KMS_KEY_ID_PREFIX_LEN]);
+        }
+        else if (!strncmp(param, SSE_WITH_BUCKET_KEY_PREFIX,
+                          SSE_WITH_BUCKET_KEY_PREFIX_LEN)) {
+            const char *val = &(param[SSE_WITH_BUCKET_KEY_PREFIX_LEN]);
+            if (!strcmp(val, "true") || !strcmp(val, "TRUE") ||
+                !strcmp(val, "yes") || !strcmp(val, "YES") ||
+                !strcmp(val, "1")) {
+                serverSideEncryptionBucketKeyEnabled = 1;
             }
         }
         else if (!strncmp(param, CANNED_ACL_PREFIX, CANNED_ACL_PREFIX_LEN)) {
@@ -2893,6 +2944,9 @@ static void copy_object(int argc, char **argv, int optindex)
             }
             else if (!strcmp(val, "authenticated-read")) {
                 cannedAcl = S3CannedAclAuthenticatedRead;
+            }
+            else if (!strcmp(val, "bucket-owner-full-control")) {
+                cannedAcl = S3CannedAclBucketOwnerFullControl;
             }
             else {
                 fprintf(stderr, "\nERROR: Unknown canned ACL: %s\n", val);
@@ -2929,7 +2983,9 @@ static void copy_object(int argc, char **argv, int optindex)
         cannedAcl,
         metaPropertiesCount,
         metaProperties,
-        useServerSideEncryption
+        useServerSideEncryption,
+        serverSideEncryptionKmsKeyId,
+        serverSideEncryptionBucketKeyEnabled
     };
 
     S3ResponseHandler responseHandler =
