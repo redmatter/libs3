@@ -114,6 +114,7 @@ const char *S3_get_status_name(S3Status status)
         handlecase(ConnectionFailed);
         handlecase(AbortedByCallback);
         handlecase(NotSupported);
+        handlecase(BadServerSideEncryption);
         handlecase(ErrorAccessDenied);
         handlecase(ErrorAccountProblem);
         handlecase(ErrorAmbiguousGrantByEmailAddress);

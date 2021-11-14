@@ -523,7 +523,9 @@ void S3_set_lifecycle(const S3BucketContext *bucketContext,
         0,                                       // cannedAcl
         0,                                       // metaDataCount
         0,                                       // metaData
-        0                                        // useServerSideEncryption
+        S3ServerSideEncryptionDisabled,          // serverSideEncryption
+        0,                                       // serverSideEncryptionKmsKeyId
+        0                                        // serverSideEncryptionBucketKeyEnabled
     };
 
     // Set up the RequestParams

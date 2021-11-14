@@ -661,7 +661,7 @@ void S3_delete_multiple_objects(const S3BucketContext *bucketContext,
 
     generate_content_md5(dmoData->deleteXmlDocument, dmoData->deleteXmlDocumentLen, dmoData->md5Base64, sizeof(dmoData->md5Base64));
 
-    dmoData->putProperties = (S3PutProperties){ "application/xml", dmoData->md5Base64, 0, 0, 0, 0, 0, 0, 0, 0 };
+    dmoData->putProperties = (S3PutProperties){ "application/xml", dmoData->md5Base64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     // Set up the RequestParams
     RequestParams params =

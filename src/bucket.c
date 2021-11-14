@@ -290,7 +290,9 @@ void S3_create_bucket(S3Protocol protocol, const char *accessKeyId,
         cannedAcl,                               // cannedAcl
         0,                                       // metaDataCount
         0,                                       // metaData
-        0                                        // useServerSideEncryption
+        S3ServerSideEncryptionDisabled,          // serverSideEncryption
+        0,                                       // serverSideEncryptionKmsKeyId
+        0                                        // serverSideEncryptionBucketKeyEnabled
     };
 
     // Set up the RequestParams
