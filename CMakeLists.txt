@@ -19,16 +19,16 @@ include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
 find_package(LibXml2 REQUIRED)
 include_directories(${LIBXML2_INCLUDE_DIR})
 
-add_library(s3_lib)
-set_property(TARGET s3_lib PROPERTY OUTPUT_NAME s3)
-target_include_directories(s3_lib PRIVATE inc/)
-target_compile_definitions(s3_lib
+add_library(LibS3)
+set_property(TARGET LibS3 PROPERTY OUTPUT_NAME s3)
+target_include_directories(LibS3 PRIVATE inc/)
+target_compile_definitions(LibS3
   PRIVATE
     -DLIBS3_VER_MAJOR="${LIBS3_VER_MAJOR}"
     -DLIBS3_VER_MINOR="${LIBS3_VER_MINOR}"
     -DLIBS3_VER="${LIBS3_VER_MAJOR}.${LIBS3_VER_MINOR}"
 )
-target_sources(s3_lib
+target_sources(LibS3
   PRIVATE
     src/bucket.c
     src/bucket_metadata.c
@@ -46,28 +46,27 @@ target_sources(s3_lib
     src/util.c
 )
 if (MINGW)
-  target_sources(s3_lib
+  target_sources(LibS3
     PRIVATE
       src/mingw_functions.c
       src/mingw_s3_functions.c
   )
 
   if (NOT BUILD_SHARED_LIBS)
-    target_compile_definitions(s3_lib PRIVATE -DLIBXML_STATIC)
+    target_compile_definitions(LibS3 PRIVATE -DLIBXML_STATIC)
   endif()
 endif()
-target_link_libraries(s3_lib
+target_link_libraries(LibS3
   PRIVATE
     ${LIBXML2_LIBRARIES}
     ${CURL_LIBRARIES}
     ${OPENSSL_LIBRARIES}
 )
 
-add_executable(s3_exe src/s3.c)
-set_property(TARGET s3_exe PROPERTY OUTPUT_NAME s3)
-target_include_directories(s3_exe PRIVATE inc/)
-target_link_libraries(s3_exe PRIVATE s3_lib)
-target_compile_definitions(s3_exe
+add_executable(s3 src/s3.c)
+target_include_directories(s3 PRIVATE inc/)
+target_link_libraries(s3 PRIVATE LibS3)
+target_compile_definitions(s3
   PRIVATE
     -DLIBS3_VER_MAJOR="${LIBS3_VER_MAJOR}"
     -DLIBS3_VER_MINOR="${LIBS3_VER_MINOR}"
@@ -77,6 +76,6 @@ target_compile_definitions(s3_exe
 if (LIBS3_BUILD_TEST)
   add_executable(testsimplexml src/testsimplexml.c)
   target_include_directories(testsimplexml PRIVATE inc/)
-  target_link_libraries(testsimplexml PRIVATE s3_lib)
+  target_link_libraries(testsimplexml PRIVATE LibS3)
 endif()
 
