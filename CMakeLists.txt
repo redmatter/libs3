@@ -63,10 +63,11 @@ target_link_libraries(LibS3
     ${OPENSSL_LIBRARIES}
 )
 
-add_executable(s3 src/s3.c)
-target_include_directories(s3 PRIVATE inc/)
-target_link_libraries(s3 PRIVATE LibS3)
-target_compile_definitions(s3
+add_executable(s3cli src/s3.c)
+set_property(TARGET s3cli PROPERTY OUTPUT_NAME s3)
+target_include_directories(s3cli PRIVATE inc/)
+target_link_libraries(s3cli PRIVATE LibS3)
+target_compile_definitions(s3cli
   PRIVATE
     -DLIBS3_VER_MAJOR="${LIBS3_VER_MAJOR}"
     -DLIBS3_VER_MINOR="${LIBS3_VER_MINOR}"
