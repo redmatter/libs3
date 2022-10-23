@@ -12,6 +12,7 @@ set_target_properties(LibS3
   PROPERTIES
     OUTPUT_NAME s3
     VERSION "${PROJECT_VERSION}"
+    SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
     PUBLIC_HEADER "${LIBS3_PUBLIC_HEADERS}"
 )
 target_compile_definitions(LibS3
