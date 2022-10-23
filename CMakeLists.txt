@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.13)
 project(libs3
         VERSION 4.1.0
         LANGUAGES C)

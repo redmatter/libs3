@@ -1,6 +1,12 @@
 set(LIBS3_PUBLIC_HEADERS
         ../inc/libs3.h)
 
+# Integer version number for easier comparison
+math(EXPR LIBS3_VER_INT
+  "(${PROJECT_VERSION_MAJOR} * 10000) + (${PROJECT_VERSION_MINOR} * 100) + ${PROJECT_VERSION_PATCH}"
+  OUTPUT_FORMAT DECIMAL
+)
+
 add_library(LibS3)
 set_target_properties(LibS3
   PROPERTIES
@@ -10,10 +16,11 @@ set_target_properties(LibS3
 )
 target_compile_definitions(LibS3
   PUBLIC
-    -DLIBS3_VER_MAJOR="${PROJECT_VERSION_MAJOR}"
-    -DLIBS3_VER_MINOR="${PROJECT_VERSION_MINOR}"
-    -DLIBS3_VER_PATCH="${PROJECT_VERSION_PATCH}"
+    -DLIBS3_VER_MAJOR=${PROJECT_VERSION_MAJOR}
+    -DLIBS3_VER_MINOR=${PROJECT_VERSION_MINOR}
+    -DLIBS3_VER_PATCH=${PROJECT_VERSION_PATCH}
     -DLIBS3_VER="${PROJECT_VERSION}"
+    -DLIBS3_VER_INT=${LIBS3_VER_INT}
 )
 target_sources(LibS3
   PRIVATE

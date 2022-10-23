@@ -1511,7 +1511,7 @@ S3Status request_api_initialize(const char *userAgentInfo, int flags,
     }
 
     snprintf(userAgentG, sizeof(userAgentG),
-             "Mozilla/4.0 (Compatible; %s; libs3 %s.%s; %s)",
+             "Mozilla/4.0 (Compatible; %s; libs3 %d.%d; %s)",
              userAgentInfo, LIBS3_VER_MAJOR, LIBS3_VER_MINOR, platform);
 
     xmlInitParser();
