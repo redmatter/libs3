@@ -164,7 +164,11 @@ void S3_get_acl(const S3BucketContext *bucketContext, const char *key,
     };
 
     // Perform the request
-    request_perform(&params, requestContext);
+    if (!request_perform(&params, requestContext)) {
+        free(gaData);
+        (*(handler->completeCallback))(S3StatusRequestFailed, 0, callbackData);
+        return;
+    }
 }
 
 
@@ -478,7 +482,11 @@ void S3_get_lifecycle(const S3BucketContext *bucketContext,
     };
 
     // Perform the request
-    request_perform(&params, requestContext);
+    if (!request_perform(&params, requestContext)) {
+        free(gaData);
+        (*(handler->completeCallback))(S3StatusRequestFailed, 0, callbackData);
+        return;
+    }
 }
 
 
@@ -602,7 +610,11 @@ void S3_set_lifecycle(const S3BucketContext *bucketContext,
     };
 
     // Perform the request
-    request_perform(&params, requestContext);
+     if (!request_perform(&params, requestContext)) {
+        free(data);
+        (*(handler->completeCallback))(S3StatusRequestFailed, 0, callbackData);
+        return;
+     }
 #endif
 }
 

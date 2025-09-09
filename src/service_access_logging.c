@@ -142,13 +142,16 @@ static S3Status convertBlsXmlCallback(const char *elementPath,
 
             if (caData->emailAddress[0]) {
                 grant->granteeType = S3GranteeTypeAmazonCustomerByEmail;
-                strcpy(grant->grantee.amazonCustomerByEmail.emailAddress,
-                       caData->emailAddress);
+                strncpy(grant->grantee.amazonCustomerByEmail.emailAddress, caData->emailAddress, S3_MAX_GRANTEE_EMAIL_ADDRESS_SIZE - 1);
+                grant->grantee.amazonCustomerByEmail.emailAddress[S3_MAX_GRANTEE_EMAIL_ADDRESS_SIZE - 1] = '\0';
             }
             else if (caData->userId[0] && caData->userDisplayName[0]) {
                 grant->granteeType = S3GranteeTypeCanonicalUser;
-                strcpy(grant->grantee.canonicalUser.id, caData->userId);
-                strcpy(grant->grantee.canonicalUser.displayName,
+                strncpy(grant->grantee.canonicalUser.id, caData->userId, S3_MAX_GRANTEE_USER_ID_SIZE - 1);
+                grant->grantee.canonicalUser.id[S3_MAX_GRANTEE_USER_ID_SIZE - 1] = '\0';
+                
+                strncpy(grant->grantee.canonicalUser.displayName, caData->userDisplayName, S3_MAX_GRANTEE_DISPLAY_NAME_SIZE - 1);
+                grant->grantee.canonicalUser.displayName[S3_MAX_GRANTEE_DISPLAY_NAME_SIZE - 1] = '\0';
                        caData->userDisplayName);
             }
             else if (caData->groupUri[0]) {
