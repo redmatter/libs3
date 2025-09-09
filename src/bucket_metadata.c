@@ -163,6 +163,7 @@ void S3_get_acl(const S3BucketContext *bucketContext, const char *key,
         timeoutMs                                     // timeoutMs
     };
 
+    free(gaData);
     // Perform the request
     request_perform(&params, requestContext);
 }
@@ -478,6 +479,7 @@ void S3_get_lifecycle(const S3BucketContext *bucketContext,
     };
 
     // Perform the request
+    free(gaData);
     request_perform(&params, requestContext);
 }
 
@@ -601,6 +603,7 @@ void S3_set_lifecycle(const S3BucketContext *bucketContext,
         timeoutMs                                     // timeoutMs
     };
 
+    free(data);
     // Perform the request
     request_perform(&params, requestContext);
 #endif
