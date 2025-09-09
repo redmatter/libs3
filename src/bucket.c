@@ -324,6 +324,7 @@ void S3_create_bucket(S3Protocol protocol, const char *accessKeyId,
     };
 
     // Perform the request
+    free(cbData);
     request_perform(&params, requestContext);
 }
 
@@ -411,6 +412,7 @@ void S3_delete_bucket(S3Protocol protocol, S3UriStyle uriStyle,
         timeoutMs                                     // timeoutMs
     };
 
+    free(dbData);
     // Perform the request
     request_perform(&params, requestContext);
 }

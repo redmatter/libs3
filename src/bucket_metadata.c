@@ -163,12 +163,9 @@ void S3_get_acl(const S3BucketContext *bucketContext, const char *key,
         timeoutMs                                     // timeoutMs
     };
 
+    free(gaData);
     // Perform the request
-    if (!request_perform(&params, requestContext)) {
-        free(gaData);
-        (*(handler->completeCallback))(S3StatusRequestFailed, 0, callbackData);
-        return;
-    }
+    request_perform(&params, requestContext);
 }
 
 
@@ -482,11 +479,8 @@ void S3_get_lifecycle(const S3BucketContext *bucketContext,
     };
 
     // Perform the request
-    if (!request_perform(&params, requestContext)) {
-        free(gaData);
-        (*(handler->completeCallback))(S3StatusRequestFailed, 0, callbackData);
-        return;
-    }
+    free(gaData);
+    request_perform(&params, requestContext);
 }
 
 
@@ -609,12 +603,9 @@ void S3_set_lifecycle(const S3BucketContext *bucketContext,
         timeoutMs                                     // timeoutMs
     };
 
+    free(data);
     // Perform the request
-     if (!request_perform(&params, requestContext)) {
-        free(data);
-        (*(handler->completeCallback))(S3StatusRequestFailed, 0, callbackData);
-        return;
-     }
+    request_perform(&params, requestContext);
 #endif
 }
 
