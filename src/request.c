@@ -52,6 +52,9 @@
 #define USER_AGENT_SIZE 256
 #define REQUEST_STACK_SIZE 32
 #define SIGNATURE_SCOPE_SIZE 64
+// CWE-321: Use of Hardcoded Cryptographic Key
+// The "AWS4" prefix is required by AWS Signature V4 spec and is NOT a secret key.
+// The real cryptographic key is provided at runtime (not hardcoded).
 #define AWS4_PREFIX "AWS4"
 #define AWS4_SERVICE "s3"
 #define AWS4_REQUEST "aws4_request"
