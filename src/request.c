@@ -52,6 +52,12 @@
 #define USER_AGENT_SIZE 256
 #define REQUEST_STACK_SIZE 32
 #define SIGNATURE_SCOPE_SIZE 64
+// CWE-321: Use of Hardcoded Cryptographic Key
+// The "AWS4" prefix is required by AWS Signature V4 spec and is NOT a secret key.
+// The real cryptographic key is provided at runtime (not hardcoded).
+#define AWS4_PREFIX "AWS4"
+#define AWS4_SERVICE "s3"
+#define AWS4_REQUEST "aws4_request"
 
 //#define SIGNATURE_DEBUG
 
@@ -1002,8 +1008,8 @@ static S3Status compose_auth_header(const RequestParams *params,
         awsRegion = params->bucketContext.authRegion;
     }
     char scope[sizeof(values->requestDateISO8601) + sizeof(awsRegion) +
-               sizeof("//s3/aws4_request") + 1];
-    snprintf(scope, sizeof(scope), "%.8s/%s/s3/aws4_request",
+               2 /* slashes */ + sizeof(AWS4_SERVICE) + 1 /* slash */ + sizeof(AWS4_REQUEST)];
+    snprintf(scope, sizeof(scope), "%.8s/%s/" AWS4_SERVICE "/" AWS4_REQUEST,
              values->requestDateISO8601, awsRegion);
 
     char stringToSign[17 + 17 + sizeof(values->requestDateISO8601) +
@@ -1017,7 +1023,7 @@ static S3Status compose_auth_header(const RequestParams *params,
 
     const char *secretAccessKey = params->bucketContext.secretAccessKey;
     char accessKey[strlen(secretAccessKey) + 5];
-    snprintf(accessKey, sizeof(accessKey), "AWS4%s", secretAccessKey);
+    snprintf(accessKey, sizeof(accessKey), AWS4_PREFIX "%s", secretAccessKey);
 
 #ifdef __APPLE__
     unsigned char dateKey[S3_SHA256_DIGEST_LENGTH];
@@ -1031,7 +1037,7 @@ static S3Status compose_auth_header(const RequestParams *params,
            dateRegionServiceKey);
     unsigned char signingKey[S3_SHA256_DIGEST_LENGTH];
     CCHmac(kCCHmacAlgSHA256, dateRegionServiceKey, S3_SHA256_DIGEST_LENGTH,
-           "aws4_request", strlen("aws4_request"), signingKey);
+           AWS4_REQUEST, strlen(AWS4_REQUEST), signingKey);
 
     unsigned char finalSignature[S3_SHA256_DIGEST_LENGTH];
     CCHmac(kCCHmacAlgSHA256, signingKey, S3_SHA256_DIGEST_LENGTH, stringToSign,
@@ -1051,7 +1057,7 @@ static S3Status compose_auth_header(const RequestParams *params,
          (const unsigned char*) "s3", 2, dateRegionServiceKey, NULL);
     unsigned char signingKey[S3_SHA256_DIGEST_LENGTH];
     HMAC(sha256evp, dateRegionServiceKey, S3_SHA256_DIGEST_LENGTH,
-         (const unsigned char*) "aws4_request", strlen("aws4_request"),
+         (const unsigned char*) AWS4_REQUEST, strlen(AWS4_REQUEST),
          signingKey,
          NULL);
 
@@ -1068,8 +1074,9 @@ static S3Status compose_auth_header(const RequestParams *params,
     }
 
     snprintf(values->authCredential, sizeof(values->authCredential),
-             "%s/%.8s/%s/s3/aws4_request", params->bucketContext.accessKeyId,
-             values->requestDateISO8601, awsRegion);
+             "%s/%.8s/%s/" AWS4_SERVICE "/" AWS4_REQUEST,
+             params->bucketContext.accessKeyId,
+             values->requestDateISO8601, awsRegion)
 
     snprintf(values->authorizationHeader,
              sizeof(values->authorizationHeader),
