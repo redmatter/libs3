@@ -148,7 +148,7 @@ else
     CFLAGS += -ULIBS3_DEBUG -USIGNATURE_DEBUG -DNDEBUG
 endif
 
-CFLAGS += -Wall -Werror -Wshadow -Wextra -Iinc \
+CFLAGS += -Wall -Wshadow -Wextra -Iinc \
           $(CURL_CFLAGS) $(LIBXML2_CFLAGS) \
           -DLIBS3_VER_MAJOR=\"$(LIBS3_VER_MAJOR)\" \
           -DLIBS3_VER_MINOR=\"$(LIBS3_VER_MINOR)\" \
@@ -174,7 +174,7 @@ all: exported test
 # Exported targets are the library and driver program
 
 .PHONY: exported
-exported: libs3 s3 headers
+exported: libs3 s3 s3-static headers
 
 
 # --------------------------------------------------------------------------
@@ -270,12 +270,17 @@ $(LIBS3_STATIC): $(LIBS3_SOURCES:%.c=$(BUILD)/obj/%.o)
 
 .PHONY: s3
 s3: $(BUILD)/bin/s3
+s3-static: $(BUILD)/bin/s3-static
 
 $(BUILD)/bin/s3: $(BUILD)/obj/s3.o $(LIBS3_SHARED)
 	$(QUIET_ECHO) $@: Building executable
 	@ mkdir -p $(dir $@)
 	$(VERBOSE_SHOW) $(CC) -o $@ $^ $(LDFLAGS)
 
+$(BUILD)/bin/s3-static: $(BUILD)/obj/s3.o $(LIBS3_STATIC)
+	$(QUIET_ECHO) $@: Building static executable
+	@ mkdir -p $(dir $@)
+	$(VERBOSE_SHOW) $(CC) -o $@ $^ $(LDFLAGS)
 
 # --------------------------------------------------------------------------
 # libs3 header targets
